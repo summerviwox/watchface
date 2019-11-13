@@ -99,7 +99,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
     private class Engine extends CanvasWatchFaceService.Engine {
 
-        private static final float HOUR_STROKE_WIDTH = 2f;
+        private static final float HOUR_STROKE_WIDTH = 1f;
         private static final float MINUTE_STROKE_WIDTH = 3f;
         private static final float SECOND_TICK_STROKE_WIDTH = 2f;
         private static final float CENTER_GAP_AND_CIRCLE_RADIUS = 4f;
@@ -166,7 +166,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                             闹铃数据.addAll(list);
                         }
                     }
-                    ToastUtils.showLong(闹铃数据.size()+"--"+SPUtils.getInstance().getString("clock"));
+                    //ToastUtils.showLong(闹铃数据.size()+"--"+SPUtils.getInstance().getString("clock"));
                     Calendar calendar = Calendar.getInstance();
                     for(int i = 0; i< 闹铃数据.size(); i++){
                         calendar.setTime(new Date(闹铃数据.get(i).getStarttime()));
@@ -226,6 +226,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mHourPaint.setAntiAlias(true);
             mHourPaint.setStrokeCap(Paint.Cap.ROUND);
             mHourPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
+            mHourPaint.setTextSize(20f);
 
             mTextPaint = new Paint();
             mTextPaint.setColor(Color.WHITE);
@@ -498,9 +499,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
 //
 //            }
 
-            canvas.drawCircle(mCenterX,mCenterY,CENTER_GAP_AND_CIRCLE_RADIUS,mTickAndCirclePaint);
+            //canvas.drawCircle(mCenterX,mCenterY,CENTER_GAP_AND_CIRCLE_RADIUS,mTickAndCirclePaint);
 
             /* Restore the canvas' original orientation. */
+            canvas.restore();
+            canvas.save();
+            mHourPaint.setTextAlign(Paint.Align.CENTER);
+            canvas.drawText(Calendar.getInstance().get(Calendar.MINUTE)+"",mCenterX,mCenterY,mHourPaint);
             canvas.restore();
         }
 
@@ -509,10 +514,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
             canvas.drawText(现在显示内容,width/2,(height-mBackgroundBitmap.getHeight())/2-10,mTextPaint);
             mTextPaint.setTextAlign(Paint.Align.RIGHT);
             canvas.drawText(电池电量,width-30,(height-mBackgroundBitmap.getHeight())/2-10,mTextPaint);
+            mTextPaint.setTextAlign(Paint.Align.CENTER);
             canvas.drawText(接下来显示内容,width/2,height-10,mTextPaint);
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH  mm");
-            canvas.drawText(simpleDateFormat.format(new Date()),width/2,height/2+30,mTextPaint);
-            int week = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+            mTextPaint.setTextAlign(Paint.Align.CENTER);
+//            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH  mm");
+//            canvas.drawText(simpleDateFormat.format(new Date()),width/2,height/2+30,mTextPaint);
+            int week = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)-1;
             String weektext = "";
             switch (week){
                 case 0:
