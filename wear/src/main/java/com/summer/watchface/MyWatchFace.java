@@ -13,12 +13,14 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
 import androidx.palette.graphics.Palette;
 
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
@@ -141,6 +143,10 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private float width;
         private float height;
 
+        public final long[] VIBRATE_TIME = new long[]{
+                1000,3000,1000,3000,1000,3000,1000,3000,
+        };
+
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
@@ -159,13 +165,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     super.onSuccess(alarmListData);
                     LogUtils.e(GsonUtils.toJson(alarmListData));
                     SPUtils.getInstance().put("clock", GsonUtils.toJson(alarmListData.getData()));
-                    if(闹铃数据.size()==0){
-                        ArrayList<Alarm> list  = new Gson().fromJson(SPUtils.getInstance().getString("clock"),new TypeToken<ArrayList<Alarm>>(){}.getType());
-                        if(list!=null){
-                            闹铃数据.clear();
-                            闹铃数据.addAll(list);
-                        }
-                    }
+                    ArrayList<Alarm> list  = new Gson().fromJson(SPUtils.getInstance().getString("clock"),new TypeToken<ArrayList<Alarm>>(){}.getType());
+                    闹铃数据.clear();
+                    闹铃数据.addAll(list);
                     //ToastUtils.showLong(闹铃数据.size()+"--"+SPUtils.getInstance().getString("clock"));
                     Calendar calendar = Calendar.getInstance();
                     for(int i = 0; i< 闹铃数据.size(); i++){
@@ -175,6 +177,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                         闹铃数据.get(i).setEnd(calendar.get(Calendar.HOUR_OF_DAY)*60+ calendar.get(Calendar.MINUTE));
                         Log.e("3333", 闹铃数据.get(i).getStart()+"");
                     }
+                    updateTimer();
                 }
 
                 @Override
@@ -357,11 +360,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
              */
             mSecondHandLength = (float) (mCenterX * 0.875);
             sMinuteHandLength = (float) (mCenterX * 0.75);
-            if(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)>=12){
-                sHourHandLength = (float) (mCenterX*0.6);
-            }else{
-                sHourHandLength = (float) (mCenterX*0.8);
-            }
 
             /* Scale loaded background image (more efficient) if surface dimensions change. */
             float scale = ((float) width) / (float) mBackgroundBitmap.getWidth();
@@ -505,7 +503,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             canvas.restore();
             canvas.save();
             mHourPaint.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText(Calendar.getInstance().get(Calendar.MINUTE)+"",mCenterX,mCenterY,mHourPaint);
+            canvas.drawText(Calendar.getInstance().get(Calendar.MINUTE)+"",mCenterX,mCenterY+5,mHourPaint);
             canvas.restore();
         }
 
@@ -562,9 +560,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
             } else {
                 unregisterReceiver();
             }
-
+            if(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)>=12){
+                sHourHandLength = (float) (mCenterX*0.6);
+            }else{
+                sHourHandLength = (float) (mCenterX*0.8);
+            }
             /* Check and trigger whether or not timer should be running (only in active mode). */
             updateTimer();
+
+
         }
 
         private void registerReceiver() {
@@ -599,19 +603,25 @@ public class MyWatchFace extends CanvasWatchFaceService {
          * should only run in active mode.
          */
         private boolean shouldTimerBeRunning() {
-            return isVisible() && !mAmbient;
+            return true;
         }
 
         /**
          * Handle updating the time periodically in interactive mode.
          */
         private void handleUpdateTimeMessage() {
+            LogUtils.e("handleUpdateTimeMessage");
             int b = checked(闹铃数据);
             if (b != -1) {
                 if (震动器 == null) {
                     震动器 = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
                 }
-                震动器.vibrate(new long[]{1000l, 1000l, 1000l, 1000l}, -1);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    VibrationEffect vibrationEffect = VibrationEffect.createWaveform(VIBRATE_TIME,-1);
+                    震动器.vibrate(vibrationEffect);
+                }else{
+                    震动器.vibrate(VIBRATE_TIME,-1);
+                }
             }
             if (shouldTimerBeRunning()) {
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm");
@@ -674,7 +684,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             Calendar calendar = Calendar.getInstance();
             int nowmin = calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE);
             for(int i=0;datas!=null&&i<datas.size();i++){
-                LogUtils.e(datas.get(i).getText());
+               // LogUtils.e(datas.get(i).getText());
                 if(nowmin<=datas.get(i).getStart()){
                     b= i;
                     return b;
