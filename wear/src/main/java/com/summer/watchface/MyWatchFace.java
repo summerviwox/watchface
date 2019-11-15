@@ -36,6 +36,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.summer.watchface.data.net.BaseCallBack;
 import com.summer.watchface.data.net.ListData;
+import com.summer.watchface.data.net.ObjectData;
 
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
@@ -69,9 +70,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
     private static final int 刷新通知 = 0;
 
-    ArrayList<Alarm> 闹铃数据 =new ArrayList<>();
-
-    public static Vibrator 震动器;
 
     @Override
     public Engine onCreateEngine() {
@@ -150,6 +148,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
+            new AlarmDE().setAlarm(getApplicationContext(),2*1000);
             getNetData();
             setWatchFaceStyle(new WatchFaceStyle.Builder(MyWatchFace.this).setAcceptsTapEvents(true).build());
             mCalendar = Calendar.getInstance();
@@ -166,18 +165,17 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     LogUtils.e(GsonUtils.toJson(alarmListData));
                     SPUtils.getInstance().put("clock", GsonUtils.toJson(alarmListData.getData()));
                     ArrayList<Alarm> list  = new Gson().fromJson(SPUtils.getInstance().getString("clock"),new TypeToken<ArrayList<Alarm>>(){}.getType());
-                    闹铃数据.clear();
-                    闹铃数据.addAll(list);
+                    AppReceiver.alarms.clear();
+                    AppReceiver.alarms.addAll(list);
                     //ToastUtils.showLong(闹铃数据.size()+"--"+SPUtils.getInstance().getString("clock"));
                     Calendar calendar = Calendar.getInstance();
-                    for(int i = 0; i< 闹铃数据.size(); i++){
-                        calendar.setTime(new Date(闹铃数据.get(i).getStarttime()));
-                        闹铃数据.get(i).setStart(calendar.get(Calendar.HOUR_OF_DAY)*60+ calendar.get(Calendar.MINUTE));
-                        calendar.setTime(new Date(闹铃数据.get(i).getEndtime()));
-                        闹铃数据.get(i).setEnd(calendar.get(Calendar.HOUR_OF_DAY)*60+ calendar.get(Calendar.MINUTE));
-                        Log.e("3333", 闹铃数据.get(i).getStart()+"");
+                    for(int i = 0; i< AppReceiver.alarms.size(); i++){
+                        calendar.setTime(new Date(AppReceiver.alarms.get(i).getStarttime()));
+                        AppReceiver.alarms.get(i).setStart(calendar.get(Calendar.HOUR_OF_DAY)*60+ calendar.get(Calendar.MINUTE));
+                        calendar.setTime(new Date(AppReceiver.alarms.get(i).getEndtime()));
+                        AppReceiver.alarms.get(i).setEnd(calendar.get(Calendar.HOUR_OF_DAY)*60+ calendar.get(Calendar.MINUTE));
+                        Log.e("3333", AppReceiver.alarms.get(i).getStart()+"");
                     }
-                    updateTimer();
                 }
 
                 @Override
@@ -603,94 +601,21 @@ public class MyWatchFace extends CanvasWatchFaceService {
          * should only run in active mode.
          */
         private boolean shouldTimerBeRunning() {
-            return true;
+            return isVisible() && !mAmbient;
         }
 
         /**
          * Handle updating the time periodically in interactive mode.
          */
         private void handleUpdateTimeMessage() {
-            LogUtils.e("handleUpdateTimeMessage");
-            int b = checked(闹铃数据);
-            if (b != -1) {
-                if (震动器 == null) {
-                    震动器 = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    VibrationEffect vibrationEffect = VibrationEffect.createWaveform(VIBRATE_TIME,-1);
-                    震动器.vibrate(vibrationEffect);
-                }else{
-                    震动器.vibrate(VIBRATE_TIME,-1);
-                }
-            }
-            if (shouldTimerBeRunning()) {
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm");
-                int c = checkedArea(闹铃数据);
-                if (c != -1) {
-                    simpleDateFormat.setTimeZone(TimeZone.getDefault());
-                    //simpleDateFormat.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
-                    MyWatchFace.现在显示内容 = "" + 闹铃数据.get(c).getText() + "(" + simpleDateFormat.format(new Date(闹铃数据.get(c).getStarttime())) + "--" + simpleDateFormat.format(new Date(闹铃数据.get(c).getEndtime())) + ")";
-                }else{
-                    MyWatchFace.现在显示内容 = "空闲";
-                }
-                int next = checkedNext(闹铃数据);
-                if(next!=-1){
-                    MyWatchFace.接下来显示内容 = 闹铃数据.get(next).getText() + "(" + simpleDateFormat.format(new Date(闹铃数据.get(next).getStarttime())) + "--" + simpleDateFormat.format(new Date(闹铃数据.get(next).getEndtime())) + ")";
-                }else{
-                    MyWatchFace.接下来显示内容 = "空闲";
-                }
-
-                BatteryManager batteryManager = (BatteryManager)getSystemService(BATTERY_SERVICE);
-                int battery = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-                电池电量 = battery+"%";
-            }
             invalidate();
             long timeMs = System.currentTimeMillis();
             long delayMs = 更新时间- (timeMs % 更新时间);
             mUpdateTimeHandler.sendEmptyMessageDelayed(刷新通知, delayMs);
 
-
-
         }
 
 
-        public int checked(ArrayList<Alarm> datas){
-            int  b= -1;
-            Calendar calendar = Calendar.getInstance();
-            int nowmin = calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE);
-            for(int i=0;datas!=null&&i<datas.size();i++){
-                if(nowmin==datas.get(i).getStart()){
-                    b= i;
-                }
-            }
-            return b;
-        }
 
-        public int checkedArea(ArrayList<Alarm> datas){
-            int  b= -1;
-            Calendar calendar = Calendar.getInstance();
-            int nowmin = calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE);
-            for(int i=0;datas!=null&&i<datas.size();i++){
-                if(nowmin>=datas.get(i).getStart()&&nowmin<=datas.get(i).getEnd()){
-                    b= i;
-                    return b;
-                }
-            }
-            return b;
-        }
-
-        public int checkedNext(ArrayList<Alarm> datas){
-            int  b= -1;
-            Calendar calendar = Calendar.getInstance();
-            int nowmin = calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE);
-            for(int i=0;datas!=null&&i<datas.size();i++){
-               // LogUtils.e(datas.get(i).getText());
-                if(nowmin<=datas.get(i).getStart()){
-                    b= i;
-                    return b;
-                }
-            }
-            return b;
-        }
     }
 }

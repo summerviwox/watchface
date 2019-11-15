@@ -107,7 +107,11 @@
                 android:resource="@xml/watch_face" />
         </service>
 
-
+        <service android:name=".AliveService"  android:enabled="true" android:exported="true">
+            <intent-filter android:priority="2147483647">
+                <action android:name="com.summer.alive"/>
+            </intent-filter>
+        </service>
     </application>
 
     <!-- Required for complications to receive complication data and open the provider chooser. -->
