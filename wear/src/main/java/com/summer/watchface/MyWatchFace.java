@@ -148,13 +148,14 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
-            new AlarmDE().setAlarm(getApplicationContext(),2*1000);
+            //new AlarmDE().setAlarm(getApplicationContext(),2*1000);
             getNetData();
             setWatchFaceStyle(new WatchFaceStyle.Builder(MyWatchFace.this).setAcceptsTapEvents(true).build());
             mCalendar = Calendar.getInstance();
             //new AlarmDE().setAlarm(getApplicationContext(),2*1000);
             initializeBackground();
             initializeWatchFace();
+            AppReceiver.regist(getApplicationContext());
         }
 
         public void getNetData(){
@@ -175,6 +176,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
                         calendar.setTime(new Date(AppReceiver.alarms.get(i).getEndtime()));
                         AppReceiver.alarms.get(i).setEnd(calendar.get(Calendar.HOUR_OF_DAY)*60+ calendar.get(Calendar.MINUTE));
                         Log.e("3333", AppReceiver.alarms.get(i).getStart()+"");
+                    }
+
+
+                    int next = checkedNext(AppReceiver.alarms);
+                    if(next !=-1){
+                        long time = (TimeUnit.DAYS.toMillis(1)*
+                                (System.currentTimeMillis()/TimeUnit.DAYS.toMillis(1)))+
+                                (AppReceiver.alarms.get(next).getStarttime()%TimeUnit.DAYS.toMillis(1));
+                        new AlarmDE().setAlarm(getApplicationContext(),time);
                     }
                 }
 
@@ -263,6 +273,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(刷新通知);
+            AppReceiver.unRegist(getApplicationContext());
             super.onDestroy();
         }
 
@@ -614,8 +625,21 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mUpdateTimeHandler.sendEmptyMessageDelayed(刷新通知, delayMs);
 
         }
-
-
-
+        public int checkedNext(ArrayList<Alarm> datas){
+            if(datas==null||datas.size()==0){
+                return -1;
+            }
+            int  b= 0;
+            Calendar calendar = Calendar.getInstance();
+            int nowmin = calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE);
+            for(int i=0;datas!=null&&i<datas.size();i++){
+                 LogUtils.e(datas.get(i).getText());
+                if(nowmin<=datas.get(i).getStart()){
+                    b= i;
+                    return b;
+                }
+            }
+            return b;
+        }
     }
 }

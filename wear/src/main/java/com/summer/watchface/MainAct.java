@@ -11,6 +11,6 @@ public class MainAct extends Activity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_main);
-        new AlarmDE().setAlarm(getApplicationContext(),2*1000);
+        //new AlarmDE().setAlarm(getApplicationContext(),2*1000);
     }
 }

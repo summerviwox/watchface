@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
+import com.blankj.utilcode.util.LogUtils;
+
 import java.io.Serializable;
 
 public class AlarmDE implements Serializable {
@@ -18,21 +20,20 @@ public class AlarmDE implements Serializable {
 
     public void setAlarm(Context context, long time){
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(context, AliveService.class);
+        Intent intent = new Intent(context, AppReceiver.class);
         intent.putExtra("time",time);
         PendingIntent pendingIntent = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            pendingIntent = PendingIntent.getForegroundService(context, (int) time,intent, PendingIntent.FLAG_CANCEL_CURRENT);
-        }else{
-            pendingIntent = PendingIntent.getService(context, (int) time,intent, PendingIntent.FLAG_CANCEL_CURRENT);
-        }
+        pendingIntent = PendingIntent.getBroadcast(context, 0,intent, PendingIntent.FLAG_CANCEL_CURRENT);
         //pendingIntent = PendingIntent.getActivity(context,0,new Intent(context,WelcomeCT.class),PendingIntent.FLAG_CANCEL_CURRENT);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            LogUtils.e("setAlarm1");
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time, pendingIntent);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            LogUtils.e("setAlarm2");
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, time, pendingIntent);
         } else {
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, time, 1000*60*60*24, pendingIntent);
+            LogUtils.e("setAlarm3");
+            alarmManager.set(AlarmManager.RTC_WAKEUP, time, pendingIntent);
         }
     }
 }

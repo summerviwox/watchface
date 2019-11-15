@@ -27,6 +27,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public class AppReceiver extends BroadcastReceiver {
 
@@ -98,9 +99,16 @@ public class AppReceiver extends BroadcastReceiver {
             MyWatchFace.接下来显示内容 = "空闲";
         }
 
-        BatteryManager batteryManager = (BatteryManager)context.getSystemService(Context.BATTERY_SERVICE);
-        int battery = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-        MyWatchFace.电池电量 = battery+"%";
+//        BatteryManager batteryManager = (BatteryManager)context.getSystemService(Context.BATTERY_SERVICE);
+//        int battery = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+//        MyWatchFace.电池电量 = battery+"%";
+
+        if(next !=-1){
+            long time = (TimeUnit.DAYS.toMillis(1)*
+                    (System.currentTimeMillis()/TimeUnit.DAYS.toMillis(1)))+
+                    (AppReceiver.alarms.get(next).getStarttime()%TimeUnit.DAYS.toMillis(1));
+            new AlarmDE().setAlarm(context,time);
+        }
     }
 
 
@@ -130,7 +138,10 @@ public class AppReceiver extends BroadcastReceiver {
     }
 
     public int checkedNext(ArrayList<Alarm> datas){
-        int  b= -1;
+        if(datas==null||datas.size()==0){
+            return -1;
+        }
+        int  b= 0;
         Calendar calendar = Calendar.getInstance();
         int nowmin = calendar.get(Calendar.HOUR_OF_DAY)*60+calendar.get(Calendar.MINUTE);
         for(int i=0;datas!=null&&i<datas.size();i++){

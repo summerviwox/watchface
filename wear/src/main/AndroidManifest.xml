@@ -112,6 +112,12 @@
                 <action android:name="com.summer.alive"/>
             </intent-filter>
         </service>
+
+        <receiver android:name=".AppReceiver"  android:enabled="true" android:exported="true">
+            <intent-filter android:priority="2147483647">
+                <action android:name="com.summer.appreceiver"/>
+            </intent-filter>
+        </receiver>
     </application>
 
     <!-- Required for complications to receive complication data and open the provider chooser. -->
